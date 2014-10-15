@@ -822,7 +822,7 @@ BaseFloat LatticeForwardBackwardMpeVariants(
   return tot_forward_score;
 }
 
-void LatticeForwardNCE(const Lattice &lat,
+SignedLogDouble LatticeForwardNCE(const Lattice &lat,
                        const std::vector<int32> &state_times,
                        int32 max_time,
                        std::vector<SignedLogDouble> &alpha_p,
@@ -887,6 +887,11 @@ void LatticeForwardNCE(const Lattice &lat,
   // state through arcs carrying their respective final weights and then
   // add a "Final" weight of One() to the new state
   KALDI_ASSERT(final_states_count == 1);
+
+  SignedLogDouble H(r);
+  H.DivideBy(Z);
+
+  return -H;
 }
 
 void LatticeBackwardNCE(const Lattice &lat,
@@ -1084,7 +1089,7 @@ SignedLogDouble LatticeComputeNCEGradientsWrtScaledAcousticLike(
   return LatticeNCEGradientsWrtScaledAcousticLike(trans, lat, state_times, alpha_p, alpha_r, beta_p, beta_r, post);
 }
 
-BaseFloat LatticeForwardBackwardNCE(
+SignedLogDouble LatticeForwardBackwardNCE(
     const TransitionModel &trans,
     const Lattice &lat,
     Posterior *post) {
@@ -1253,7 +1258,7 @@ BaseFloat LatticeForwardBackwardNCE(
       }
     }
   }
-  return -(H.Value());    // Negative Conditional Entropy
+  return -H;    // Negative Conditional Entropy
 }
 
 bool CompactLatticeToWordAlignment(const CompactLattice &clat,
