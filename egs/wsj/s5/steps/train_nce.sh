@@ -22,8 +22,8 @@ echo "$0 $@"  # Print the command line for logging
 . parse_options.sh || exit 1;
 
 if [ $# -ne 4 ]; then
-  echo "Usage: steps/train_mmi.sh <data> <lang> <lats-dir> <exp>"
-  echo " e.g.: steps/train_mmi.sh data/unsup data/lang exp/tri3b/decode_unsup exp/tri3b"
+  echo "Usage: steps/train_nce.sh <data> <lang> <lats-dir> <exp>"
+  echo " e.g.: steps/train_nce.sh data/unsup data/lang exp/tri3b/decode_unsup exp/tri4b_nce"
   echo "Main options (for others, see top of script file)"
   echo "  --cmd (utils/run.pl|utils/queue.pl <queue opts>) # how to run jobs."
   echo "  --config <config-file>                           # config containing options"
@@ -100,7 +100,7 @@ while [ $x -lt $num_iters ]; do
     n=`echo $dir/$x.*.acc | wc -w`;
     $cmd $dir/log/acc_sum.$x.log \
       gmm-sum-accs $dir/$x.acc $dir/$x.*.acc || exit 1;
-    rm $dir/$x.*.acc
+    #rm $dir/$x.*.acc
     
     $cmd $dir/log/update.$x.log \
       gmm-est-gaussians-ebw --tau=$tau --update-flags=$update_flags \
@@ -111,7 +111,7 @@ while [ $x -lt $num_iters ]; do
       --update-flags=$update_flags - \
       "gmm-scale-accs 0.0 $dir/$x.acc - |" \
       "gmm-scale-accs -$alpha $dir/$x.acc - |" $dir/$[$x+1].mdl || exit 1;
-    rm $dir/$x.acc
+    #rm $dir/$x.acc
   fi
   cur_mdl=$dir/$[$x+1].mdl
 
