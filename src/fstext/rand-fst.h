@@ -26,27 +26,56 @@
 #include <fst/fstlib.h>
 #include <fst/fst-decl.h>
 #include "base/kaldi-math.h"
+#include "util/common-utils.h"
 
 namespace fst {
 
 // Note: all weights are constructed from nonnegative floats.
 // (so no "negative costs").
 struct RandFstOptions {
-  size_t n_syms;
-  size_t n_states;
-  size_t n_arcs;
-  size_t n_final;
+  int32 n_syms;
+  int32 n_states;
+  int32 n_arcs;
+  int32 n_final;
   bool allow_empty;
   bool acyclic;
   float weight_multiplier;
+  bool uniq_labels;
+  bool same_iolabels;
+  
   RandFstOptions() {  // Initializes the options randomly.
     n_syms = 2 + kaldi::Rand() % 5;
     n_states = 3 + kaldi::Rand() % 10;
     n_arcs = 5 + kaldi::Rand() % 30;
-    n_final = 1 + kaldi::Rand()%3;
+    n_final = 1 + kaldi::Rand() % 3;
     allow_empty = true;
     acyclic = false;
     weight_multiplier = 0.25;
+    uniq_labels = false;
+    same_iolabels = false;
+  }
+
+  void Register(kaldi::OptionsItf *po) {
+    po->Register("num-syms", &n_syms,
+        "Number of allowed symbols");
+    po->Register("num-states", &n_states,
+        "Number of states in FST");
+    po->Register("num-arcs", &n_arcs,
+        "Number of arcs in FST");
+    po->Register("num-final", &n_final,
+        "Number of final statees");
+    po->Register("allow-empty", &allow_empty,
+        "");
+    po->Register("acyclic", &acyclic, "Create acyclic FSTs");
+    po->Register("weight-multiplier", &weight_multiplier, 
+        "The weights are all multiples of this.");
+    po->Register("uniq-labels", &uniq_labels,
+        "Make the arc labels unique; "
+        "input and output labels are forced to be the same.\n"
+        "Applicable only to timed FST.");
+    po->Register("same-iolabels", &same_iolabels, 
+        "Force input and output labels to the same.\n"
+        "Applicable only to timed FST.");
   }
 };
 
@@ -229,8 +258,18 @@ template<class Arc> VectorFst<Arc>* RandPairTimedFst(RandFstOptions opts = RandF
         a.nextstate = all_states[time_states[t+1][e]];
       }
     
-      a.ilabel = 1 + kaldi::Rand() % opts.n_syms;
-      a.olabel = 1 + kaldi::Rand() % opts.n_syms;  // same input+output vocab.
+      if (opts.uniq_labels) {
+        a.ilabel = i + 1;
+        a.olabel = i + 1;
+      } else {
+        a.ilabel = 1 + kaldi::Rand() % opts.n_syms;
+        if (opts.same_iolabels) {
+          a.olabel = a.ilabel;
+        } else {
+          a.olabel = 1 + kaldi::Rand() % opts.n_syms;  // same input+output vocab.
+        }
+      }
+
       a.weight = Weight (opts.weight_multiplier*(kaldi::Rand() % 4), opts.weight_multiplier*(kaldi::Rand() % 4));
     
       fst->AddArc(start_state, a);
