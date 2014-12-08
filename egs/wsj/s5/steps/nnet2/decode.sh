@@ -20,7 +20,7 @@ ivector_scale=1.0
 lattice_beam=8.0 # Beam we use in lattice generation.
 iter=final
 num_threads=1 # if >1, will use gmm-latgen-faster-parallel
-parallel_opts=  # If you supply num-threads, you should supply this too.
+mem=
 scoring_opts=
 skip_scoring=false
 feat_type=
@@ -57,6 +57,10 @@ dir=$3
 srcdir=`dirname $dir`; # Assume model directory one level up from decoding directory.
 model=$srcdir/$iter.mdl
 
+# Add mem option to $cmd
+if [ ! -z "$mem" ]; then
+  cmd="$cmd --mem $mem"
+fi
 
 [ ! -z "$online_ivector_dir" ] && \
   extra_files="$online_ivector_dir/ivector_online.scp $online_ivector_dir/ivector_period"
@@ -129,7 +133,7 @@ if [ ! -z "$online_ivector_dir" ]; then
 fi
 
 if [ $stage -le 1 ]; then
-  $cmd $parallel_opts JOB=1:$nj $dir/log/decode.JOB.log \
+  $cmd --num-threads $num_threads JOB=1:$nj $dir/log/decode.JOB.log \
     nnet-latgen-faster$thread_string \
      --minimize=$minimize --max-active=$max_active --min-active=$min_active --beam=$beam \
      --lattice-beam=$lattice_beam --acoustic-scale=$acwt --allow-partial=true \
