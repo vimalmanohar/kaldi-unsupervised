@@ -844,7 +844,7 @@ BaseFloat LatticeForwardBackwardMpeVariants(
   return tot_forward_score;
 }
 
-SignedLogDouble LatticeForwardNCE(const Lattice &lat,
+SignedLogDouble LatticeForwardNce(const Lattice &lat,
                        const std::vector<int32> &state_times,
                        int32 max_time,
                        std::vector<SignedLogDouble> &alpha_p,
@@ -916,7 +916,7 @@ SignedLogDouble LatticeForwardNCE(const Lattice &lat,
   return -H;
 }
 
-void LatticeBackwardNCE(const Lattice &lat,
+void LatticeBackwardNce(const Lattice &lat,
                        const std::vector<int32> &state_times,
                        int32 max_time,
                        std::vector<SignedLogDouble> &beta_p,
@@ -976,7 +976,7 @@ void LatticeBackwardNCE(const Lattice &lat,
   r.Add(beta_r[0]);
 }
 
-SignedLogDouble LatticeNCEGradientsWrtScaledAcousticLike(
+SignedLogDouble LatticeNceGradientsWrtScaledAcousticLike(
     const TransitionModel &trans,
     const Lattice &lat,
     const std::vector<int32> &state_times,
@@ -1034,7 +1034,7 @@ SignedLogDouble LatticeNCEGradientsWrtScaledAcousticLike(
 
         delH.DivideBy( SignedLogDouble(false, -arc.weight.Value2()) );
 
-        // Push back delNCE = -delH
+        // Push back delNce = -delH
         (*post)[state_times[s]].push_back(std::make_pair(arc.ilabel, -delH.Value() )); 
       
         /*
@@ -1060,7 +1060,7 @@ SignedLogDouble LatticeNCEGradientsWrtScaledAcousticLike(
   return -H;    // Negative Conditional Entropy
 }
 
-SignedLogDouble LatticeComputeNCEGradientsWrtScaledAcousticLike(
+SignedLogDouble LatticeComputeNceGradientsWrtScaledAcousticLike(
     const TransitionModel &trans,
     const Lattice &lat,
     Posterior *post) {
@@ -1085,13 +1085,13 @@ SignedLogDouble LatticeComputeNCEGradientsWrtScaledAcousticLike(
   SignedLogDouble Z;
   SignedLogDouble r;
 
-  LatticeForwardNCE(lat, state_times, max_time, 
+  LatticeForwardNce(lat, state_times, max_time, 
                     alpha_p, alpha_r,
                     Z, r);
 
   SignedLogDouble Z1;
   SignedLogDouble r1;
-  LatticeBackwardNCE(lat, state_times, max_time, 
+  LatticeBackwardNce(lat, state_times, max_time, 
                     beta_p, beta_r,
                     Z1, r1);
 
@@ -1108,10 +1108,10 @@ SignedLogDouble LatticeComputeNCEGradientsWrtScaledAcousticLike(
   post->clear();
   post->resize(max_time);
 
-  return LatticeNCEGradientsWrtScaledAcousticLike(trans, lat, state_times, alpha_p, alpha_r, beta_p, beta_r, post);
+  return LatticeNceGradientsWrtScaledAcousticLike(trans, lat, state_times, alpha_p, alpha_r, beta_p, beta_r, post);
 }
 
-SignedLogDouble LatticeForwardBackwardNCE(
+SignedLogDouble LatticeForwardBackwardNce(
     const TransitionModel &trans,
     const Lattice &lat,
     Posterior *post) {
@@ -1269,7 +1269,7 @@ SignedLogDouble LatticeForwardBackwardNCE(
         delH.Sub(delZ / Z * r / Z);
         delH.Add(delr / Z);
 
-        // Push back delNCE = -delH
+        // Push back delNce = -delH
         (*post)[state_times[s]].push_back(std::make_pair(arc.ilabel, -delH.Value())); 
       
         /*
