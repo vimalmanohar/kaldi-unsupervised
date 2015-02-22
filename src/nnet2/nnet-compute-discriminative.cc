@@ -264,7 +264,7 @@ void NnetDiscriminativeUpdater::LatticeComputations() {
   if (opts_.criterion == "mmi") {
     double tot_num_like = 0.0;
     for (; index < eg_.num_ali.size(); index++)
-      tot_num_like += (answers[index]);
+      tot_num_like += answers[index];
     stats_->tot_num_objf += eg_.weight * tot_num_like;
   }
 
