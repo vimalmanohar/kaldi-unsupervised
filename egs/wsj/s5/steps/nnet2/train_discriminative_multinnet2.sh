@@ -22,10 +22,7 @@ num_jobs_nnet="4 4"    # Number of neural net jobs to run in parallel, one per
 learning_rate_scales="1.0 1.0"
 modify_learning_rates=true
 separate_learning_rates=false
-<<<<<<< HEAD
-=======
 skip_last_layer=true
->>>>>>> origin/multi_nnet_unsup
 last_layer_factor=1.0  # relates to modify-learning-rates
 first_layer_factor=1.0 # relates to modify-learning-rates
 shuffle_buffer_size=5000 # This "buffer_size" variable controls randomization of the samples
@@ -193,11 +190,8 @@ if [ $stage -le -1 ]; then
   done
 fi
 
-<<<<<<< HEAD
-=======
 # function to remove egs that might be soft links.
 remove () { for x in $*; do [ -L $x ] && rm $(readlink -f $x); rm $x; done }
->>>>>>> origin/multi_nnet_unsup
 
 
 if [ $num_threads -eq 1 ]; then
@@ -209,21 +203,10 @@ else
   num_gpu=0
 fi
 
-<<<<<<< HEAD
-#weights_csl=$(for lang in $(seq 0 $[num_lang-1]); do
-#  perl -e "print ${num_jobs_nnet_array[$lang]} * ${learning_rate_scales_array[$lang]} . \" \""
-#done | sed 's/ $//' | sed 's/ /:/g')
-
-x=0   
-while [ $x -lt $num_iters ]; do
-  if [ $stage -le $x ]; then
-    
-=======
 x=0   
 while [ $x -lt $num_iters ]; do
   if [ $x -ge 0 ] && [ $stage -le $x ]; then
 
->>>>>>> origin/multi_nnet_unsup
     echo "Training neural net (pass $x)"
 
     rm $dir/.error 2>/dev/null
