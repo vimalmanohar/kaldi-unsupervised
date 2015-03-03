@@ -186,6 +186,7 @@ if [ ! -z "$transform_dir_unsup" ] && [ ! -f $transform_dir_unsup/trans.1 ]; the
   [ ! -f $transform_dir_unsup/raw_trans.1 ] && echo "transform_dir_unsup specified as $transform_dir_unsup; but $transform_dir_unsup/trans.1 or $transform_dir_unsup/raw_trans.1 not found" && exit 1
 fi
 
+<<<<<<< HEAD
 if [ ! -z "$transform_dir_sup" ] && [ ! -f $transform_dir_sup/trans.1 ]; then
   [ ! -f $transform_dir_sup/raw_trans.1 ] && echo "transform_dir_sup specified as $transform_dir_sup; but $transform_dir_sup/trans.1 or $transform_dir_sup/raw_trans.1 not found" && exit 1
 fi
