@@ -37,6 +37,8 @@ stage=-3
 
 num_threads=16  # this is the default but you may want to change it, e.g. to 1 if
                 # using GPUs.
+parallel_opts="--num-threads 16"
+
 cleanup=true
 retroactive=false
 remove_egs=false
@@ -139,7 +141,7 @@ if [ $stage -le -1 ]; then
     echo "$0: setting learning rate to $learning_rate = --num-jobs-nnet * --effective-lrate."
   fi
 
-  $cmd $dir/log/convert.log \
+  run.pl $dir/log/convert.log \
     nnet-am-copy --learning-rate=$learning_rate "$src_model" - \| \
     nnet-am-switch-preconditioning  --num-samples-history=50000 - $dir/0.mdl || exit 1;
 fi
@@ -165,7 +167,7 @@ while [ $x -lt $num_iters ]; do
     # choosing the archive indexes to use for each job on each iteration... we cycle through
     # all archives.
 
-    $cmd JOB=1:$num_jobs_nnet $dir/log/train.$x.JOB.log \
+    $cmd $parallel_opts JOB=1:$num_jobs_nnet $dir/log/train.$x.JOB.log \
       nnet-combine-egs-discriminative \
         "ark:$degs_dir/degs.\$[((JOB-1+($x*$num_jobs_nnet))%$num_archives)+1].ark" ark:- \| \
       nnet-train-discriminative$train_suffix --silence-phones=$silphonelist \
