@@ -671,7 +671,9 @@ BaseFloat LatticeForwardBackwardMpeVariants(
     const std::vector<int32> &num_ali,
     std::string criterion,
     bool one_silence_class,
-    Posterior *post) {
+    Posterior *post,
+    const std::vector<BaseFloat> *weights,
+    BaseFloat weight_threshold) {
   using namespace fst;
   typedef Lattice::Arc Arc;
   typedef Arc::Weight Weight;
@@ -829,6 +831,7 @@ BaseFloat LatticeForwardBackwardMpeVariants(
                      << beta_smbr[s];
 
       if (transition_id != 0) { // Arc has a transition-id on it [not epsilon]
+        if (weights != NULL && (*weights)[state_times[s]] < weight_threshold) continue;
         double posterior = exp(alpha[s] + arc_beta - tot_forward_prob);
         double acc_diff = alpha_smbr[s] + frame_acc + beta_smbr[arc.nextstate]
                                - tot_forward_score;
@@ -860,7 +863,8 @@ BaseFloat LatticeForwardBackwardEmpeVariants(
     const Lattice &lat,
     std::string criterion,
     bool one_silence_class,
-    Posterior *post) {
+    Posterior *post,
+    BaseFloat weight_threshold) {
   using namespace fst;
   typedef Lattice::Arc Arc;
   typedef Arc::Weight Weight;
@@ -877,6 +881,7 @@ BaseFloat LatticeForwardBackwardEmpeVariants(
   vector<int32> state_times;
   int32 max_time = LatticeStateTimes(lat, &state_times);
   Posterior num_post(max_time);
+  vector<BaseFloat> max_post(max_time, 0.0);
 
   std::vector<double> alpha(num_states, kLogZeroDouble),
       alpha_smbr(num_states, 0), //forward variable for sMBR
@@ -888,7 +893,7 @@ BaseFloat LatticeForwardBackwardEmpeVariants(
 
   post->clear();
   post->resize(max_time);
-  
+
   alpha[0] = 0.0;
   // First Pass Forward,
   for (StateId s = 0; s < num_states; s++) {
@@ -921,6 +926,9 @@ BaseFloat LatticeForwardBackwardEmpeVariants(
 
         num_post[state_times[s]].push_back(std::make_pair(arc.ilabel, 
                                                           posterior));
+        if (max_post[state_times[s]] < posterior) {
+          max_post[state_times[s]] = posterior;
+        }
       }
     }
     beta[s] = this_beta;
@@ -1041,6 +1049,7 @@ BaseFloat LatticeForwardBackwardEmpeVariants(
                      << beta_smbr[s];
 
       if (transition_id != 0) { // Arc has a transition-id on it [not epsilon]
+        if (max_post[state_times[s]] < weight_threshold) continue;
         double posterior = exp(alpha[s] + arc_beta - tot_forward_prob);
         double acc_diff = alpha_smbr[s] + frame_acc + beta_smbr[arc.nextstate]
                                - tot_forward_score;
