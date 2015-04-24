@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
         "The output is a vector of counts/soft-counts, indexed by transition-id)\n"
         "Note: the model is only read in order to get the size of the vector\n"
         "\n"
-        "Usage: post-to-tacc [options] <model> <post-rspecifier> <accs>\n"
+        "Usage: post-to-tacc [options] <model> <post-rspecifier> <accs> [<pdf-accs>]\n"
         " e.g.: post-to-tacc --binary=false 1.mdl \"ark:ali-to-post 1.ali|\" 1.tacc\n";
 
     bool binary = true;
@@ -41,29 +41,36 @@ int main(int argc, char *argv[]) {
     po.Register("binary", &binary, "Write output in binary mode.");
     po.Read(argc, argv);
 
-    if (po.NumArgs() != 3) {
+    if (po.NumArgs() < 3) {
       po.PrintUsage();
       exit(1);
     }
       
     std::string model_rxfilename = po.GetArg(1),
         post_rspecifier = po.GetArg(2),
-        accs_wxfilename = po.GetArg(3);
+        accs_wxfilename = po.GetArg(3),
+        pdf_accs_wxfilename = po.GetArg(4);
 
     kaldi::SequentialPosteriorReader posterior_reader(post_rspecifier);
     
-    int32 num_transition_ids;
+    int32 num_transition_ids = 0, num_pdfs = 0;
+    TransitionModel trans_model;
     {
       bool binary_in;
       Input ki(model_rxfilename, &binary_in);
-      TransitionModel trans_model;
       trans_model.Read(ki.Stream(), binary_in);
       num_transition_ids = trans_model.NumTransitionIds();
+      if (pdf_accs_wxfilename != "") num_pdfs = trans_model.NumPdfs();
     }
+
     Vector<double> transition_accs(num_transition_ids+1); // +1 because they're
     // 1-based; position zero is empty.  We'll write as float.
-    int32 num_done = 0;      
+    Vector<double> pdf_accs;
     
+    if (pdf_accs_wxfilename != "") 
+      pdf_accs.Resize(num_pdfs);
+    
+    int32 num_done = 0;      
     for (; !posterior_reader.Done(); posterior_reader.Next()) {
       const kaldi::Posterior &posterior = posterior_reader.Value();
       int32 num_frames = static_cast<int32>(posterior.size());
@@ -75,6 +82,15 @@ int main(int argc, char *argv[]) {
                       << " encountered for utterance "
                       << posterior_reader.Key();
           transition_accs(tid) += posterior[i][j].second;
+
+          if (pdf_accs_wxfilename != "") {
+            int32 pdf_id = trans_model.TransitionIdToPdf(tid);
+            if (pdf_id < 0 || pdf_id > num_pdfs)
+              KALDI_ERR << "Invalid pdf-id " << pdf_id
+                        << " encountered for utterance " 
+                        << posterior_reader.Key();
+            pdf_accs(pdf_id) += posterior[i][j].second;
+          }
         }
       }
       num_done++;
@@ -85,9 +101,17 @@ int main(int argc, char *argv[]) {
       Output ko(accs_wxfilename, binary);
       transition_accs_float.Write(ko.Stream(), binary);
     }
+    
+    if (pdf_accs_wxfilename != "") {
+      Vector<BaseFloat> pdf_accs_float(pdf_accs);
+      Output ko(pdf_accs_wxfilename, binary);
+      pdf_accs_float.Write(ko.Stream(), binary);
+    }
+
     KALDI_LOG << "Done computing transition stats over "
               << num_done << " utterances; wrote stats to "
               << accs_wxfilename;
+    
     return (num_done != 0 ? 0 : 1);
   } catch(const std::exception &e) {
     std::cerr << e.what();
