@@ -47,9 +47,16 @@ function filter_text {
    '[NOISE]' '[LAUGHTER]' '[VOCALIZED-NOISE]' '<UNK>' '%HESITATION'
 }
 
-$cmd LMWT=$min_lmwt:$max_lmwt $dir/scoring/log/best_path.LMWT.log \
-  lattice-best-path --lm-scale=LMWT --word-symbol-table=$lang/words.txt \
-    "ark:gunzip -c $dir/lat.*.gz|" ark,t:$dir/scoring/LMWT.tra || exit 1;
+rm $dir/.error
+for inv_acwt in `seq $min_lmwt $max_lmwt`; do 
+  acwt=`perl -e "print (1.0/$inv_acwt);"`
+  $cmd $dir/scoring/rescore_mbr.${inv_acwt}.log \
+    lattice-mbr-decode --acoustic-scale=$acwt --word-symbol-table=$lang/words.txt \
+    "ark:gunzip -c $dir/lat.*.gz|" ark,t:$dir/scoring/${inv_acwt}.tra ark,t:$dir/scoring/${inv_acwt}.br \
+    || touch $dir/.error &
+done
+wait;
+[ -f $dir/.error ] && echo "score_mbr.sh: errror getting MBR outout.";
 
 for lmwt in `seq $min_lmwt $max_lmwt`; do
   utils/int2sym.pl -f 2- $lang/words.txt <$dir/scoring/$lmwt.tra | \
@@ -68,3 +75,4 @@ $cmd LMWT=$min_lmwt:$max_lmwt $dir/scoring/log/score.LMWT.log \
    ark:$dir/scoring/text.filt ark:$dir/scoring/LMWT.txt ">&" $dir/wer_LMWT || exit 1;
 
 exit 0
+
