@@ -21,7 +21,7 @@ max_mem=20000000 # This will stop the processes getting too large.
 # by something like 5 or 10 to get real bytes (not sure why so large)
 # End configuration section.
 use_gpu=no # yes|no|optional
-parallel_opts="-pe smp 2"
+parallel_opts="--num-threads 2"
 
 echo "$0 $@"  # Print the command line for logging
 
@@ -180,8 +180,11 @@ else
 fi
 
 #2) Generate 'scp' for reading the lattices
+# make $dir an absolute pathname.
+[ '/' != ${dir:0:1} ] && dir=$PWD/$dir
 for n in `seq $nj`; do
-  find $dir/lat${n} -name "*.gz" | awk -v FS="/" '{ print gensub(".gz","","",$NF)" gunzip -c "$0" |"; }' 
-done >$dir/lat.scp
+  find $dir/lat${n} -name "*.gz" | perl -ape 's:.*/([^/]+)\.gz$:$1 gunzip -c $& |:; '
+done | sort >$dir/lat.scp
+[ -s $dir/lat.scp ] || exit 1
 
 echo "$0: done generating denominator lattices."
