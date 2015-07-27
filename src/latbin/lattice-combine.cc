@@ -37,8 +37,8 @@ using std::string;
 using std::vector;
 
 #include "util/common-utils.h"
+#include "lat/lattice-functions.h"
 #include "lat/kaldi-lattice.h"
-#include "lat/kws-functions.h"
 #include "lat/sausages.h"
 
 namespace kaldi {
@@ -81,7 +81,7 @@ bool CompactLatticeNormalize(CompactLattice *clat, BaseFloat weight,
 
   // If exp_weights = false, add to the log AM & LM scores.
   if (!exp_weights)
-    total_backward_cost -= std::log(weight);
+    total_backward_cost -= Log(weight);
   
   for (fst::StateIterator<CompactLattice> sit(*clat); !sit.Done(); sit.Next()) {
     CompactLatticeWeight f = clat->Final(sit.Value());

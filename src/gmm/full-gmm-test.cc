@@ -61,7 +61,7 @@ void init_rand_diag_gmm(DiagGmm *gmm) {
     weights(m) = kaldi::RandUniform();
     for (size_t d= 0; d < dim; d++) {
       means(m, d) = kaldi::RandGauss();
-      vars(m, d) = exp(kaldi::RandGauss()) + 1e-5;
+      vars(m, d) = Exp(kaldi::RandGauss()) + 1e-5;
     }
     tot_weight += weights(m);
   }
@@ -100,7 +100,7 @@ void UnitTestFullGmmEst() {
       predicted_change = 0.5 * num_params / num_frames; // Was there
   KALDI_LOG << "Objf change per frame was " << change << " vs. predicted "
             << predicted_change;
-  KALDI_ASSERT(change < 2.0 * predicted_change && change > 0.0)
+  KALDI_ASSERT(change < 2.0 * predicted_change && change > 0.0);
 }
 
 
@@ -156,7 +156,7 @@ UnitTestFullGmm() {
       + VecSpVec(means.Row(m), invcovars[m], means.Row(m))
       + VecSpVec(feat, invcovars[m], feat))
       + VecSpVec(means.Row(m), invcovars[m], feat);
-    loglikes(m) += log(weights(m));
+    loglikes(m) += Log(weights(m));
   }
 
   loglike = loglikes.LogSumExp();

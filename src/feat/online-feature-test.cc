@@ -70,6 +70,7 @@ bool RandomSplit(int32 wav_dim,
                  int32 num_pieces,
                  int32 trials = 5) {
   piece_dim->clear();
+  piece_dim->resize(num_pieces, 0);
 
   int32 dim_mean = wav_dim / (num_pieces * 2);
   int32 cnt = 0;
@@ -154,7 +155,7 @@ void TestOnlineSpliceFrames() {
 }
 
 void TestOnlineMfcc() {
-  std::ifstream is("../feat/test_data/test.wav");
+  std::ifstream is("../feat/test_data/test.wav", std::ios_base::binary);
   WaveData wave;
   wave.Read(is);
   KALDI_ASSERT(wave.Data().NumRows() == 1);
@@ -182,8 +183,10 @@ void TestOnlineMfcc() {
   // we try to break it into from 5 pieces to 9(not essential to do so)
   for (int32 num_piece = 5; num_piece < 10; num_piece++) {
     OnlineMfcc online_mfcc(op);
-    std::vector<int32> piece_length(num_piece);
-    KALDI_ASSERT(RandomSplit(waveform.Dim(), &piece_length, num_piece));
+    std::vector<int32> piece_length(num_piece, 0);
+
+    bool ret = RandomSplit(waveform.Dim(), &piece_length, num_piece);
+    KALDI_ASSERT(ret);
 
     int32 offset_start = 0;
     for (int32 i = 0; i < num_piece; i++) {
@@ -202,7 +205,7 @@ void TestOnlineMfcc() {
 }
 
 void TestOnlinePlp() {
-  std::ifstream is("../feat/test_data/test.wav");
+  std::ifstream is("../feat/test_data/test.wav", std::ios_base::binary);
   WaveData wave;
   wave.Read(is);
   KALDI_ASSERT(wave.Data().NumRows() == 1);
@@ -231,7 +234,8 @@ void TestOnlinePlp() {
   for (int32 num_piece = 5; num_piece < 10; num_piece++) {
     OnlinePlp online_plp(op);
     std::vector<int32> piece_length(num_piece);
-    KALDI_ASSERT(RandomSplit(waveform.Dim(), &piece_length, num_piece));
+    bool ret = RandomSplit(waveform.Dim(), &piece_length, num_piece);
+    KALDI_ASSERT(ret);
 
     int32 offset_start = 0;
     for (int32 i = 0; i < num_piece; i++) {
@@ -250,7 +254,7 @@ void TestOnlinePlp() {
 }
 
 void TestOnlineTransform() {
-  std::ifstream is("../feat/test_data/test.wav");
+  std::ifstream is("../feat/test_data/test.wav", std::ios_base::binary);
   WaveData wave;
   wave.Read(is);
   KALDI_ASSERT(wave.Data().NumRows() == 1);
@@ -293,7 +297,7 @@ void TestOnlineTransform() {
 }
 
 void TestOnlineAppendFeature() {
-  std::ifstream is("../feat/test_data/test.wav");
+  std::ifstream is("../feat/test_data/test.wav", std::ios_base::binary);
   WaveData wave;
   wave.Read(is);
   KALDI_ASSERT(wave.Data().NumRows() == 1);
@@ -342,8 +346,8 @@ void TestOnlineAppendFeature() {
     OnlineAppendFeature online_mfcc_plp(&online_mfcc, &online_plp);
 
     std::vector<int32> piece_length(num_piece);
-    KALDI_ASSERT(RandomSplit(waveform.Dim(), &piece_length, num_piece));
-
+    bool ret = RandomSplit(waveform.Dim(), &piece_length, num_piece);
+    KALDI_ASSERT(ret);
     int32 offset_start = 0;
     for (int32 i = 0; i < num_piece; i++) {
       Vector<BaseFloat> wave_piece(

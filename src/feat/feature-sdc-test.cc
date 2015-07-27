@@ -131,7 +131,7 @@ static void UnitTestEndEffects(Matrix<BaseFloat> &raw_features, int32 window,
 }
 
 int main() {
-  std::ifstream is("test_data/test.wav");
+  std::ifstream is("test_data/test.wav", std::ios_base::binary);
   WaveData wave;
   wave.Read(is);
   KALDI_ASSERT(wave.Data().NumRows() == 1);
@@ -162,6 +162,7 @@ int main() {
     }
     return 0;
   } catch (const std::exception &e) {
+    static_cast<void>(e);
     return 1;
   }
   

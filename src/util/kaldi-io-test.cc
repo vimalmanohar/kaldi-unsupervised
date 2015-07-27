@@ -19,6 +19,7 @@
 #include "base/io-funcs.h"
 #include "util/kaldi-io.h"
 #include "base/kaldi-math.h"
+#include "base/kaldi-utils.h"
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
@@ -161,14 +162,15 @@ void UnitTestIoNew(bool binary) {
 void UnitTestIoPipe(bool binary) {
   // This is as UnitTestIoNew except with different filenames.
   {
-#ifdef _MSC_VER
-    const char *filename_out = "|more > tmpf.txt",
-        *filename_in = "type tmpf.txt |";
+#if defined(_MSC_VER) && !defined(KALDI_CYGWIN_COMPAT)
+    // self-invocation on Windows that emulates cat(1)
+    const char *filename_out = "|kaldi-io-test cat > tmpf.gz",
+        *filename_in = "kaldi-io-test cat tmpf.gz|";
 #else
     const char *filename_out = "|gzip -c > tmpf.gz",
         *filename_in = "gunzip -c tmpf.gz |";
 #endif
-    
+
     Output ko(filename_out, binary);
     std::ostream &outfile = ko.Stream();
     if (!binary) outfile << "\t";
@@ -215,7 +217,7 @@ void UnitTestIoPipe(bool binary) {
     bool ans = ko.Close();
     KALDI_ASSERT(ans);
 #ifndef _MSC_VER
-    sleep(1);  // This test does not work without this sleep:
+    Sleep(1);  // This test does not work without this sleep:
     // seems to be some kind of file-system latency.
 #endif
     {
@@ -296,15 +298,59 @@ void UnitTestIoStandard() {
   }
 }
 
+// This is Windows-specific.
+void UnitTestNativeFilename() {
+#ifdef KALDI_CYGWIN_COMPAT
+  extern std::string MapCygwinPath(const std::string &filename);
 
+  KALDI_ASSERT(MapCygwinPath("") == "");
+  KALDI_ASSERT(MapCygwinPath(".") == ".");
+  KALDI_ASSERT(MapCygwinPath("..") == "..");
+  KALDI_ASSERT(MapCygwinPath("/dev/null")[0] != '/');
+  KALDI_ASSERT(MapCygwinPath("/tmp")[1] == ':');
+  KALDI_ASSERT(MapCygwinPath("/tmp/")[1] == ':');
+  KALDI_ASSERT(MapCygwinPath("/tmp/foo")[1] == ':');
+  KALDI_ASSERT(MapCygwinPath("/cygdrive/c") == "c:/");
+  KALDI_ASSERT(MapCygwinPath("/cygdrive/c/") == "c:/");
+  KALDI_ASSERT(MapCygwinPath("/cygdrive/c/foo") == "c:/foo");
+#endif
+}
 
 }  // end namespace kaldi.
 
+#if defined(_MSC_VER) && !defined(KALDI_CYGWIN_COMPAT)
+//         /\_/\   Windows has no cat!
+//    ____/ o o \
+//  /~____  =%= /  There is probably no suitable tool to test popen I/O
+// (______)__m_m)  on Windows, so we emulate a lame version of cat(1).
+static int TinyCat(int argc, const char** argv) {
+  const char* name_in = argc > 0 && strcmp(argv[0], "-") ? argv[0] : NULL;
+  int fd_in = name_in ? _open(name_in, _O_RDONLY) : _fileno(stdin);
+  if (fd_in < 0)
+    return 1;
 
+  int fd_out = _fileno(stdout);
+  _setmode(fd_in, _O_BINARY);
+  _setmode(fd_out, _O_BINARY);
 
-int main() {
+  char buffer[100];
+  int last_read;
+  while ((last_read = _read(fd_in, buffer, sizeof(buffer))) > 0)
+    _write(fd_out, buffer, last_read);
+
+  if (name_in) _close(fd_in);
+  return 0;
+}
+#endif
+
+int main(int argc, const char** argv) {
   using namespace kaldi;
+#if defined(_MSC_VER) && !defined(KALDI_CYGWIN_COMPAT)
+  if (argc > 1 && strcmp(argv[1], "cat") == 0)
+    return TinyCat(argc - 2, argv + 2);
+#endif
 
+  UnitTestNativeFilename();
   UnitTestIoNew(false);
   UnitTestIoNew(true);
   UnitTestIoPipe(true);
@@ -316,4 +362,3 @@ int main() {
   KALDI_ASSERT(1);  // just wanted to check that KALDI_ASSERT does not fail for 1.
   return 0;
 }
-
